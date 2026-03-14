@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoBook — Living Memory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #2C1810;
+      --ink-soft: #6B4C3B;
+      --parchment: #FAF5EE;
+      --cream: #F5EDD8;
+      --gold: #C9973A;
+      --gold-lt: #E8C97A;
+      --rose: #C4736A;
+      --sage: #7A9E7E;
+      --line: rgba(44, 24, 16, 0.12);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--parchment);
+      color: var(--ink);
+      font-family: 'Crimson Pro', Georgia, serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* Connect Screen */
+    #connect-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--parchment);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      flex-direction: column;
+      gap: 28px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .connect-ornament {
+      font-size: 3rem;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    .connect-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      font-weight: 400;
+      color: var(--ink);
+    }
+
+    .connect-sub {
+      font-size: 1.05rem;
+      color: var(--ink-soft);
+      font-style: italic;
+      max-width: 420px;
+      line-height: 1.7;
+    }
+
+    .connect-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .connect-fields input {
+      width: 100%;
+      padding: 14px 18px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 1rem;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .connect-fields input:focus {
+      border-color: var(--gold);
+    }
+
+    .connect-fields input::placeholder {
+      color: var(--ink-soft);
+      opacity: .4;
+    }
+
+    #start-btn {
+      padding: 16px 48px;
+      background: var(--ink);
+      color: var(--parchment);
+      border: none;
+      border-radius: 2px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      cursor: pointer;
+      letter-spacing: .04em;
+      transition: all .2s;
+    }
+
+    #start-btn:hover {
+      background: var(--ink-soft);
+      transform: translateY(-1px);
+    }
+
+    .connect-note {
+      font-size: .75rem;
+      color: var(--ink-soft);
+      opacity: .4;
+    }
+
+    /* App Layout */
+    #app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+      display: none;
+    }
+
+    /* Auth & Dashboard */
+    #auth-screen,
+    #dashboard-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .auth-box {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .auth-box h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--ink);
+      margin-bottom: 20px;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    /* Books Grid */
+    #dashboard-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 80px 20px;
+      overflow-y: auto;
+    }
+
+    .dashboard-header {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 40px;
+    }
+
+    .dashboard-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      color: var(--ink);
+    }
+
+    .books-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .book-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 180px;
+    }
+
+    .book-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(201, 151, 58, 0.1);
+    }
+
+    .book-card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .book-card-date {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      margin-bottom: 12px;
+    }
+
+    .book-card-summary {
+      font-size: 0.9rem;
+      color: var(--ink);
+      opacity: 0.8;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .new-book-card {
+      background: transparent;
+      border: 2px dashed var(--line);
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--ink-soft);
+    }
+
+    .new-book-card:hover {
+      background: rgba(201, 151, 58, 0.05);
+      border-style: solid;
+      color: var(--gold);
+    }
+
+    .new-book-card .plus-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    header {
+      grid-column: 1/-1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid var(--line);
+      background: var(--cream);
+    }
+
+    .logo-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      letter-spacing: .02em;
+    }
+
+    .logo-sub {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      font-size: .95rem;
+      color: var(--ink-soft);
+      margin-left: 10px;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .85rem;
+      color: var(--ink-soft);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      transition: background .4s;
+    }
+
+    .status-dot.connected {
+      background: var(--sage);
+      box-shadow: 0 0 6px var(--sage);
+      animation: pdot 2s infinite;
+    }
+
+    .status-dot.listening {
+      background: var(--rose);
+      box-shadow: 0 0 8px var(--rose);
+      animation: pdot 1s infinite;
+    }
+
+    @keyframes pdot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .4;
+      }
+    }
+
+    /* Sidebar */
+    #sidebar {
+      grid-row: 2;
+      background: var(--cream);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 22px;
+      gap: 20px;
+      height: calc(100vh - 65px);
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+    }
+
+    /* Mode Toggle */
+    .mode-toggle {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-family: 'Crimson Pro', serif;
+      font-size: .8rem;
+      color: var(--ink-soft);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      transition: all .2s;
+    }
+
+    .mode-btn.active {
+      background: var(--ink);
+      color: var(--parchment);
+    }
+
+    /* Voice Panel */
+    #voice-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .mic-ring {
+      position: relative;
+      width: 110px;
+      height: 110px;
+    }
+
+    .mic-ring-outer {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid var(--line);
+      transition: all .3s;
+    }
+
+    .mic-ring-outer.active {
+      border-color: var(--rose);
+      animation: ring-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes ring-pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 4px rgba(196, 115, 106, .12), 0 0 0 12px rgba(196, 115, 106, .05);
+      }
+
+      50% {
+        box-shadow: 0 0 0 12px rgba(196, 115, 106, .08), 0 0 0 24px rgba(196, 115, 106, .03);
+      }
+    }
+
+    #mic-btn {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: none;
+      background: var(--parchment);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(44, 24, 16, .12);
+      transition: all .25s;
+    }
+
+    #mic-btn:hover {
+      transform: scale(1.04);
+    }
+
+    #mic-btn.recording {
+      background: var(--rose);
+    }
+
+    #mic-btn.recording svg {
+      color: white;
+    }
+
+    .mic-label {
+      font-size: .78rem;
+      color: var(--ink-soft);
+      text-align: center;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    #visualizer {
+      width: 100%;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .viz-bar {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--gold);
+      height: 4px;
+      transition: height .1s ease;
+    }
+
+    /* Text Panel */
+    #text-panel {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #text-input {
+      width: 100%;
+      padding: 12px 14px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      font-family: 'Crimson Pro', serif;
+      font-size: .95rem;
+      color: var(--ink);
+      resize: vertical;
+      min-height: 90px;
+      outline: none;
+      line-height: 1.6;
+    }
+
+    #text-input:focus {
+      border-color: var(--gold);
+    }
+
+    #send-btn {
+      padding: 10px;
+      background: var(--ink);
+      color: var(--parchment);
+      border: none;
+      border-radius: 2px;
+      font-family: 'Playfair Display', serif;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .03em;
+    }
+
+    #send-btn:hover {
+      background: var(--ink-soft);
+    }
+
+    #send-btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    /* Generating banner */
+    #generating-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      background: rgba(201, 151, 58, .08);
+      border: 1px solid rgba(201, 151, 58, .2);
+      border-radius: 4px;
+      font-size: .8rem;
+      color: var(--gold);
+    }
+
+    #generating-banner.visible {
+      display: flex;
+    }
+
+    .gen-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(201, 151, 58, .2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Transcript */
+    .transcript-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--ink-soft);
+      opacity: .6;
+    }
+
+    #transcript-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      background: var(--parchment);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: .88rem;
+      line-height: 1.7;
+      color: var(--ink-soft);
+      font-style: italic;
+      min-height: 120px;
+      max-height: 220px;
+    }
+
+    #transcript-box::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #transcript-box::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 2px;
+    }
+
+    .transcript-agent {
+      color: var(--ink);
+      font-style: normal;
+    }
+
+    .transcript-agent::before {
+      content: '✦ ';
+      color: var(--gold);
+      font-size: .7em;
+    }
+
+    .transcript-user {
+      color: var(--ink-soft);
+      font-style: italic;
+    }
+
+    .transcript-user::before {
+      content: 'you — ';
+      opacity: .5;
+      font-size: .8em;
+    }
+
+    .session-info {
+      padding: 14px;
+      background: rgba(44, 24, 16, .03);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: .82rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    .session-info strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    /* Book Area */
+    #book-area {
+      grid-row: 2;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    #book-area::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #book-area::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 3px;
+    }
+
+    /* Welcome */
+    #welcome-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 18px;
+      text-align: center;
+      padding: 60px 40px;
+    }
+
+    .welcome-ornament {
+      font-size: 2rem;
+      color: var(--gold);
+      opacity: .6;
+    }
+
+    .welcome-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.9rem;
+      font-weight: 400;
+      line-height: 1.3;
+    }
+
+    .welcome-sub {
+      font-size: 1.05rem;
+      color: var(--ink-soft);
+      font-style: italic;
+      max-width: 360px;
+      line-height: 1.7;
+    }
+
+    .welcome-hint {
+      font-size: .78rem;
+      color: var(--ink-soft);
+      opacity: .4;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* Book */
+    #book-content {
+      display: none;
+    }
+
+    .book-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .book-title-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+    }
+
+    .book-page-count {
+      font-size: .8rem;
+      color: var(--ink-soft);
+      opacity: .5;
+      letter-spacing: .05em;
+    }
+
+    #pages-container {
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+
+    /* Page */
+    .book-page {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: white;
+      box-shadow: 0 4px 40px rgba(44, 24, 16, .1), 0 1px 8px rgba(44, 24, 16, .06);
+      border-radius: 2px;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(24px);
+      animation: page-appear .8s ease forwards;
+    }
+
+    @keyframes page-appear {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .page-illustration {
+      position: relative;
+      overflow: hidden;
+      background: var(--cream);
+      aspect-ratio: 4/3;
+    }
+
+    .page-illustration img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 0;
+      transition: opacity .8s ease;
+    }
+
+    .page-illustration img.loaded {
+      opacity: 1;
+    }
+
+    .img-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .watercolor-spin {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: conic-gradient(rgba(201, 151, 58, .3) 0deg, rgba(196, 115, 106, .3) 120deg, rgba(122, 158, 126, .3) 240deg, rgba(201, 151, 58, .3) 360deg);
+      animation: wcspin 3s linear infinite;
+      filter: blur(2px);
+    }
+
+    @keyframes wcspin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .img-loading-text {
+      font-size: .75rem;
+      color: var(--ink-soft);
+      opacity: .5;
+      font-style: italic;
+    }
+
+    .page-content {
+      padding: 44px 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+      position: relative;
+    }
+
+    .page-content::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 40px;
+      bottom: 40px;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--line), transparent);
+    }
+
+    .page-number {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--gold);
+      opacity: .7;
+    }
+
+    .page-chapter-tag {
+      display: inline-block;
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--ink-soft);
+      opacity: .5;
+      padding: 3px 10px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      align-self: flex-start;
+    }
+
+    .page-narration {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.08rem;
+      font-style: italic;
+      line-height: 1.85;
+      color: var(--ink);
+    }
+
+    .page-era {
+      font-size: .78rem;
+      color: var(--ink-soft);
+      opacity: .45;
+      letter-spacing: .05em;
+    }
+
+    .page-divider {
+      width: 36px;
+      height: 1px;
+      background: var(--gold);
+      opacity: .4;
+    }
+
+    .page-people {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .person-tag {
+      font-size: .7rem;
+      padding: 2px 8px;
+      background: rgba(201, 151, 58, .08);
+      border: 1px solid rgba(201, 151, 58, .2);
+      border-radius: 20px;
+      color: var(--gold);
+      letter-spacing: .04em;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+      }
+
+      #sidebar {
+        grid-row: 2;
+        height: auto;
+        max-height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+        position: relative;
+        padding: 20px;
+      }
+
+      #book-area {
+        grid-row: 3;
+        padding: 20px;
+      }
+
+      .book-page {
+        grid-template-columns: 1fr;
+      }
+
+      .page-illustration {
+        aspect-ratio: 16/9;
+      }
+
+      .page-content {
+        padding: 24px;
+      }
+
+      .page-content::before {
+        display: none;
+      }
+
+      header {
+        padding: 12px 20px;
+      }
+
+      .logo-title {
+        font-size: 1.4rem;
+      }
+
+      .logo-sub {
+        display: none;
+      }
+
+      .connect-title {
+        font-size: 2rem;
+      }
+
+      .welcome-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Global Backend URL (Hidden from judges, configured once) -->
+  <input type="hidden" id="backend-url" value="http://localhost:8080" />
+
+  <!-- Auth Screen -->
+  <div id="auth-screen">
+    <div class="auth-box">
+      <h2>Welcome to EchoBook</h2>
+      <p style="margin-bottom: 24px; color: var(--ink-soft);">Please sign in to access your personal library.</p>
+      <button class="btn-start" onclick="loginWithGoogle()"
+        style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;color:var(--ink);border:1px solid var(--line);">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+          <path fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+          <path fill="none" d="M1 1h22v22H1z" />
+        </svg>
+        Sign in with Google
+      </button>
+    </div>
+  </div>
+
+  <!-- Dashboard Screen -->
+  <div id="dashboard-screen">
+    <div class="dashboard-header">
+      <h1>Your Library</h1>
+      <button class="btn-start" style="padding: 8px 16px; font-size: 0.9rem;" onclick="logout()">Sign Out</button>
+    </div>
+    <div class="books-grid" id="books-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- New Book Modal -->
+  <div class="modal-overlay" id="new-book-modal">
+    <div class="auth-box">
+      <h2 style="font-size: 1.5rem">Start a New Book</h2>
+      <p style="margin-bottom: 20px; color: var(--ink-soft); font-size: 0.9rem;">Whose memories are we preserving?</p>
+      <input type="text" id="storyteller-name-modal" class="auth-input" placeholder="Storyteller's Name (e.g., Eleanor)"
+        onkeydown="if(event.key==='Enter') createNewBook()" />
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-start" style="background: var(--line); color: var(--ink);"
+          onclick="closeNewBookModal()">Cancel</button>
+        <button class="btn-start" style="flex: 1;" onclick="createNewBook()">Begin Interview</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app">
+    <header>
+      <div>
+        <span class="logo-title">EchoBook</span>
+        <span class="logo-sub">— Living Memory</span>
+      </div>
+      <div class="header-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Connecting…</span>
+      </div>
+    </header>
+
+    <aside id="sidebar">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btn-voice" onclick="setMode('voice')">🎙 Voice</button>
+        <button class="mode-btn" id="btn-text" onclick="setMode('text')">✏️ Text</button>
+      </div>
+
+      <!-- Voice Panel -->
+      <div id="voice-panel">
+        <div class="mic-ring">
+          <div class="mic-ring-outer" id="mic-ring"></div>
+          <button id="mic-btn" onclick="toggleMic()">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="22" />
+              <line x1="8" y1="22" x2="16" y2="22" />
+            </svg>
+          </button>
+        </div>
+        <p class="mic-label" id="mic-label">Tap to begin</p>
+        <div id="visualizer">
+          <div class="viz-bar" id="vb0"></div>
+          <div class="viz-bar" id="vb1"></div>
+          <div class="viz-bar" id="vb2"></div>
+          <div class="viz-bar" id="vb3"></div>
+          <div class="viz-bar" id="vb4"></div>
+          <div class="viz-bar" id="vb5"></div>
+          <div class="viz-bar" id="vb6"></div>
+          <div class="viz-bar" id="vb7"></div>
+          <div class="viz-bar" id="vb8"></div>
+          <div class="viz-bar" id="vb9"></div>
+          <div class="viz-bar" id="vb10"></div>
+          <div class="viz-bar" id="vb11"></div>
+        </div>
+      </div>
+
+      <!-- Text Panel -->
+      <div id="text-panel">
+        <textarea id="text-input" placeholder="Type a memory here and press Send…"></textarea>
+        <button id="send-btn" onclick="sendText()">Send Memory</button>
+      </div>
+
+      <div id="generating-banner">
+        <div class="gen-spinner"></div>
+        <span>Illustrating your memory…</span>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+        <p class="transcript-label">Conversation</p>
+        <div id="transcript-box"><span style="opacity:.4;font-style:italic;">Your conversation will appear here…</span>
+        </div>
+      </div>
+
+      <div class="session-info" id="session-info" style="display:none">
+        <strong>📚 Today's session</strong><br />
+        <span id="session-pages">0 pages created</span>
+      </div>
+    </aside>
+
+    <main id="book-area">
+      <div id="welcome-state">
+        <div class="welcome-ornament">✦</div>
+        <h2 class="welcome-title">Every memory<br />becomes a page</h2>
+        <p class="welcome-sub">Start speaking — or switch to Text mode — and watch your story come to life.</p>
+        <p class="welcome-hint">Use the Voice or Text toggle on the left</p>
+      </div>
+      <div id="book-content">
+        <div class="book-header">
+          <h2 class="book-title-text" id="book-title">The Book of Memories</h2>
+          <span class="book-page-count" id="page-count-label">0 pages</span>
+        </div>
+        <div id="pages-container"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Firebase Authentication Module -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+
+    // TODO: Paste your Firebase config here
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOzg4Cits6I1ZZUQikq7k-J0TAY93RhA8",
+      authDomain: "echobook-489514.firebaseapp.com",
+      databaseURL: "https://echobook-489514-default-rtdb.firebaseio.com",
+      projectId: "echobook-489514",
+      storageBucket: "echobook-489514.firebasestorage.app",
+      messagingSenderId: "34603468285",
+      appId: "1:34603468285:web:72566d644c1d510d350594",
+      measurementId: "G-78F0K8T7JB"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in
+        window.userId = user.uid;
+        document.getElementById('auth-screen').style.display = 'none';
+        if (window.loadDashboard) window.loadDashboard();
+      } else {
+        // User is signed out
+        window.userId = '';
+        document.getElementById('dashboard-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('auth-screen').style.display = 'flex';
+      }
+    });
+
+    window.loginWithGoogle = async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error("Error signing in with Google", error);
+        alert("Login failed: " + error.message);
+      }
+    };
+
+    window.logout = async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error("Error signing out", error);
+      }
+    };
+  </script>
+
+  <script>
+    // ── State ──────────────────────────────────────────────
+    let mode = 'voice';
+    let ws = null, mediaStream = null, audioContext = null;
+    let processor = null, analyser = null, isRecording = false;
+    let outputAudioContext = null, audioQueue = [], isPlayingAudio = false;
+    let pageCount = 0, sessionPages = 0;
+    let storytellerName = '', backendUrl = '';
+    // Export userId globally so Firebase module can update it
+    window.userId = '';
+    let bookId = '';
+    let textHistory = [];
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('voice-panel').style.display = m === 'voice' ? 'flex' : 'none';
+      document.getElementById('text-panel').style.display = m === 'text' ? 'flex' : 'none';
+      document.getElementById('btn-voice').classList.toggle('active', m === 'voice');
+      document.getElementById('btn-text').classList.toggle('active', m === 'text');
+      if (m === 'voice') document.getElementById('text-panel').style.flexDirection = '';
+      if (m === 'text') document.getElementById('text-panel').style.display = 'flex';
+    }
+
+    // ── Auth & Dashboard ────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      backendUrl = document.getElementById('backend-url').value.trim().replace(/\/$/, '');
+    });
+
+    window.loadDashboard = async function () {
+      document.getElementById('dashboard-screen').style.display = 'flex';
+      const grid = document.getElementById('books-grid');
+      grid.innerHTML = '<span style="color:var(--ink-soft)">Loading books...</span>';
+
+      try {
+        const res = await fetch(`${backendUrl}/api/books/${window.userId}`);
+        const data = await res.json();
+
+        grid.innerHTML = '';
+
+        // New Book Card
+        const newCard = document.createElement('div');
+        newCard.className = 'book-card new-book-card';
+        newCard.onclick = () => document.getElementById('new-book-modal').classList.add('active');
+        newCard.innerHTML = `<div class="plus-icon">+</div><h3>New Book</h3>`;
+        grid.appendChild(newCard);
+
+        if (data.books && data.books.length > 0) {
+          data.books.forEach(book => {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+            card.onclick = () => continueSession(book.id, book.storyteller_name || 'Storyteller');
+
+            const dateStr = new Date(book.last_updated).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            card.innerHTML = `
+              <div>
+                <div class="book-card-title">${book.storyteller_name || 'Storyteller'}'s Book</div>
+                <div class="book-card-date">Last updated: ${dateStr}</div>
+                <div class="book-card-summary">${book.last_session_summary || ''}</div>
+              </div>
+              <div style="margin-top: 16px; color: var(--gold); font-size: 0.9rem; font-weight: 500;">Continue →</div>
+            `;
+            grid.appendChild(card);
+          });
+        }
+      } catch (e) {
+        grid.innerHTML = '<span style="color:var(--error)">Error loading books. Backend might be down.</span>';
+      }
+    }
+
+    function closeNewBookModal() {
+      document.getElementById('new-book-modal').classList.remove('active');
+    }
+
+    async function createNewBook() {
+      const name = document.getElementById('storyteller-name-modal').value.trim();
+      if (!name) return;
+
+      const newBookId = 'book_' + Date.now();
+      try {
+        await fetch(`${backendUrl}/api/books`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: window.userId, book_id: newBookId, storyteller_name: name })
+        });
+      } catch (e) { }
+
+      closeNewBookModal();
+      continueSession(newBookId, name);
+    }
+
+    // ── Session Start ───────────────────────────────────────
+    let initialGreeting = "";
+    async function continueSession(bId, name) {
+      bookId = bId;
+      storytellerName = name;
+
+      document.getElementById('dashboard-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'grid';
+      document.getElementById('book-title').textContent = `The Book of ${storytellerName}`;
+      setStatus('connected', 'Ready');
+
+      // Reset previous states
+      pageCount = 0; sessionPages = 0;
+      document.getElementById('pages-container').innerHTML = '';
+      document.getElementById('welcome-state').style.display = 'block';
+      document.getElementById('book-content').style.display = 'none';
+      document.getElementById('session-info').style.display = 'none';
+      document.getElementById('transcript-box').innerHTML = '<span style="opacity:.4;font-style:italic;">Your conversation will appear here…</span>';
+
+      try {
+        const res = await fetch(`${backendUrl}/session-greeting/${window.userId}/${bookId}`);
+        const data = await res.json();
+        initialGreeting = data.greeting;
+        addTranscript('agent', data.greeting);
+        textHistory = [{ role: 'assistant', content: data.greeting }];
+      } catch (e) {
+        initialGreeting = 'Hello! I am EchoBook. Tell me a memory from your childhood.';
+        addTranscript('agent', initialGreeting);
+      }
+
+      loadExistingPages();
+      connectWebSocket();
+    }
+
+    // ── Mode Toggle ─────────────────────────────────────────
+    function setMode(m) {
+      mode = m;
+      document.getElementById('voice-panel').style.display = m === 'voice' ? 'flex' : 'none';
+      document.getElementById('text-panel').style.display = m === 'text' ? 'flex' : 'none';
+      document.getElementById('btn-voice').classList.toggle('active', m === 'voice');
+      document.getElementById('btn-text').classList.toggle('active', m === 'text');
+      if (m === 'voice') document.getElementById('text-panel').style.flexDirection = '';
+      if (m === 'text') document.getElementById('text-panel').style.display = 'flex';
+    }
+
+    // ── Text Mode ───────────────────────────────────────────
+    async function sendText() {
+      const input = document.getElementById('text-input');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      const btn = document.getElementById('send-btn');
+      btn.disabled = true;
+      btn.textContent = 'Thinking…';
+
+      addTranscript('user', msg);
+
+      try {
+        const res = await fetch(`${backendUrl}/api/text-turn`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, history: textHistory, user_id: window.userId, book_id: bookId })
+        });
+        const data = await res.json();
+
+        addTranscript('agent', data.reply);
+        textHistory = data.history;
+
+        if (data.captured && data.vignette) {
+          showGenerating(true);
+          addPage({
+            narration: data.vignette.narration,
+            image_url: data.image_url,
+            era: data.vignette.era,
+            emotion: data.vignette.emotion,
+            chapter: data.vignette.chapter,
+            key_people: data.vignette.key_people,
+          });
+          showGenerating(false);
+        }
+      } catch (e) {
+        addTranscript('agent', 'Sorry, something went wrong. Please try again.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Send Memory';
+    }
+
+    // Allow Enter key to send (Shift+Enter for newline)
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('text-input')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); }
+      });
+    });
+
+    // ── WebSocket ───────────────────────────────────────────
+    function connectWebSocket() {
+      const wsUrl = backendUrl.replace('http', 'ws') + `/ws/interview/${window.userId}/${bookId}`;
+      ws = new WebSocket(wsUrl);
+      ws.onopen = () => setStatus('connected', 'Ready to listen');
+      ws.onmessage = e => handleMessage(JSON.parse(e.data));
+      ws.onclose = () => { setStatus('', 'Disconnected'); setTimeout(connectWebSocket, 3000); };
+    }
+
+    function handleMessage(msg) {
+      switch (msg.type) {
+        case 'audio': queueAudio(msg.data); break;
+        case 'transcript': addTranscript('agent', msg.text); break;
+        case 'page_generating': showGenerating(true); break;
+        case 'new_page': showGenerating(false); addPage(msg); break;
+        case 'error': console.error('Backend:', msg.message); break;
+      }
+    }
+
+    // ── Microphone ──────────────────────────────────────────
+    let hasGreeted = false;
+    async function toggleMic() {
+      isRecording ? stopRecording() : await startRecording();
+    }
+
+    async function startRecording() {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
+        audioContext = new AudioContext({ sampleRate: 16000 });
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
+        source.connect(analyser);
+        processor = audioContext.createScriptProcessor(4096, 1, 1);
+        source.connect(processor); processor.connect(audioContext.destination);
+        processor.onaudioprocess = e => {
+          if (!isRecording || !ws || ws.readyState !== WebSocket.OPEN) return;
+          ws.send(float32ToInt16(e.inputBuffer.getChannelData(0)).buffer);
+        };
+        isRecording = true; updateMicUI(true); animateVisualizer();
+
+        // Ensure AudioContext isn't suspended to prevent playback hangups
+        if (!outputAudioContext) {
+          outputAudioContext = new AudioContext({ sampleRate: 24000 });
+        }
+        if (outputAudioContext.state === 'suspended') {
+          await outputAudioContext.resume();
+        }
+
+        if (!hasGreeted && initialGreeting && ws.readyState === WebSocket.OPEN) {
+          hasGreeted = true;
+          ws.send(JSON.stringify({ type: "greeting", text: initialGreeting }));
+        }
+      } catch (e) { alert('Microphone access denied.'); }
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      if (processor) { processor.disconnect(); processor = null; }
+      if (audioContext) { audioContext.close(); audioContext = null; }
+      if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+      updateMicUI(false); resetVisualizer();
+    }
+
+    function updateMicUI(active) {
+      document.getElementById('mic-btn').classList.toggle('recording', active);
+      document.getElementById('mic-ring').classList.toggle('active', active);
+      document.getElementById('mic-label').textContent = active ? 'Listening…' : 'Tap to speak';
+      document.getElementById('status-dot').className = 'status-dot ' + (active ? 'listening' : 'connected');
+      document.getElementById('status-text').textContent = active ? 'Listening' : 'Ready';
+    }
+
+    // ── Audio Output ────────────────────────────────────────
+    let nextAudioTime = 0;
+
+    async function queueAudio(b64) {
+      if (!outputAudioContext) outputAudioContext = new AudioContext({ sampleRate: 24000 });
+      if (outputAudioContext.state === 'suspended') await outputAudioContext.resume();
+
+      try {
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        // Properly view the ArrayBuffer as Int16 elements
+        const i16 = new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
+        const f32 = new Float32Array(i16.length);
+        for (let i = 0; i < i16.length; i++) f32[i] = i16[i] / 32768;
+
+        const buf = outputAudioContext.createBuffer(1, f32.length, 24000);
+        buf.copyToChannel(f32, 0);
+        const src = outputAudioContext.createBufferSource();
+        src.buffer = buf;
+        src.connect(outputAudioContext.destination);
+
+        // Schedule playback sequentially without gaps
+        if (nextAudioTime < outputAudioContext.currentTime) {
+          nextAudioTime = outputAudioContext.currentTime + 0.05; // 50ms buffer to catch up
+        }
+        src.start(nextAudioTime);
+        nextAudioTime += buf.duration;
+      } catch (e) {
+        console.error("Audio decoding/playback error:", e);
+      }
+    }
+
+    // ── Visualizer ──────────────────────────────────────────
+    function animateVisualizer() {
+      if (!isRecording || !analyser) return;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      for (let i = 0; i < 12; i++) {
+        const h = Math.max(4, (data[Math.floor(i * data.length / 12)] / 255) * 40);
+        document.getElementById('vb' + i).style.height = h + 'px';
+      }
+      requestAnimationFrame(animateVisualizer);
+    }
+    function resetVisualizer() { for (let i = 0; i < 12; i++) document.getElementById('vb' + i).style.height = '4px'; }
+
+    // ── Transcript ──────────────────────────────────────────
+    function addTranscript(role, text) {
+      const box = document.getElementById('transcript-box');
+      if (box.querySelector('span[style]')) box.innerHTML = '';
+      const p = document.createElement('p');
+      p.style.marginBottom = '10px';
+      p.className = role === 'agent' ? 'transcript-agent' : 'transcript-user';
+      p.textContent = text;
+      box.appendChild(p);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ── Pages ───────────────────────────────────────────────
+    async function loadExistingPages() {
+      try {
+        const res = await fetch(`${backendUrl}/book/${window.userId}/${bookId}`);
+        const data = await res.json();
+        if (data.pages?.length) data.pages.forEach(p => addPage(p, false));
+      } catch (e) { }
+    }
+
+    function addPage(pageData, animate = true) {
+      pageCount++; sessionPages++;
+      document.getElementById('welcome-state').style.display = 'none';
+      document.getElementById('book-content').style.display = 'block';
+      document.getElementById('session-info').style.display = 'block';
+      document.getElementById('page-count-label').textContent = pageCount + (pageCount === 1 ? ' page' : ' pages');
+      document.getElementById('session-pages').textContent = sessionPages + (sessionPages === 1 ? ' page created today' : ' pages created today');
+
+      const container = document.getElementById('pages-container');
+      const page = document.createElement('div');
+      page.className = 'book-page';
+      if (!animate) { page.style.animation = 'none'; page.style.opacity = '1'; page.style.transform = 'none'; }
+
+      const pollinationsUrl = pageData.image_url || `https://image.pollinations.ai/prompt/${encodeURIComponent('soft watercolor illustration, warm nostalgic palette, children book art style, ' + (pageData.scene_description || pageData.narration || 'nostalgic memory watercolor'))}?width=800&height=600&nologo=true&seed=42`;
+
+      page.innerHTML = `
+    <div class="page-illustration">
+      <div class="img-loading" id="img-loading-${pageCount}">
+        <div class="watercolor-spin"></div>
+        <span class="img-loading-text">Painting your memory…</span>
+      </div>
+      <img src="${pollinationsUrl}"
+           alt="Memory illustration"
+           style="opacity:0;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
+           onload="this.style.opacity='1'; document.getElementById('img-loading-${pageCount}').style.display='none';"
+           onerror="document.getElementById('img-loading-${pageCount}').querySelector('.img-loading-text').textContent='Illustration unavailable';" />
+    </div>
+    <div class="page-content">
+      <span class="page-number">Page ${pageCount}</span>
+      ${pageData.chapter ? `<span class="page-chapter-tag">${pageData.chapter}</span>` : ''}
+      <div class="page-divider"></div>
+      <p class="page-narration">${pageData.narration || ''}</p>
+      ${pageData.era ? `<p class="page-era">${pageData.era}</p>` : ''}
+      ${pageData.key_people?.length ? `<div class="page-people">${pageData.key_people.map(p => `<span class="person-tag">${p}</span>`).join('')}</div>` : ''}
+    </div>
+  `;
+
+      container.appendChild(page);
+      setTimeout(() => page.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+    }
+
+    // ── Helpers ─────────────────────────────────────────────
+    function setStatus(cls, text) {
+      document.getElementById('status-dot').className = 'status-dot' + (cls ? ' ' + cls : '');
+      document.getElementById('status-text').textContent = text;
+    }
+    function showGenerating(show) { document.getElementById('generating-banner').classList.toggle('visible', show); }
+    function float32ToInt16(f32) { const i16 = new Int16Array(f32.length); for (let i = 0; i < f32.length; i++) i16[i] = Math.max(-32768, Math.min(32767, f32[i] * 32768)); return i16; }
+    function int16ToFloat32(i16) { const f32 = new Float32Array(i16.length); for (let i = 0; i < i16.length; i++) f32[i] = i16[i] / 32768; return f32; }
+  </script>
+</body>
+
+</html>
