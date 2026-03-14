@@ -512,11 +512,3 @@ async def handle_voice_capture(
             pass
 
 
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/")
-async def serve_frontend():
-    return FileResponse("static/index.html")
