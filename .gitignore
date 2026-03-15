@@ -54,3 +54,5 @@ yarn-error.log*
 next-env.d.ts
 
 test_task.sh
+
+.antigravityignore
