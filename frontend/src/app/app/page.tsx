@@ -13,7 +13,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   // Set this to your local running Uvicorn server, or via process.env.NEXT_PUBLIC_API_URL
-  const backendUrl = "http://localhost:8080";
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://echobook-1.onrender.com";
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
